@@ -4,10 +4,10 @@
 import random
 import scrapy
 import pymysql
+import time
 
 class ProxyMiddleWare(object):
     def __init__(self, settings, spider):
-        print('proxy init...')
         self.proxy_ips = []
         self.settings = settings
         self.use_proxy = self.settings.get('use_proxy', False)
@@ -17,25 +17,22 @@ class ProxyMiddleWare(object):
        return cls(crawler.settings, crawler.spider)
 
     def process_request(self, request, spider):
-        print('proxy request process...')
-        print(request.meta)
         if self.use_proxy and request.meta.get('use_proxy'):
             if not self.proxy_ips:
                 self.refresh_pool()
             if self.proxy_ips:
                 ip = random.choice(self.proxy_ips)
                 self.proxy_ips.remove(ip)
-                print(ip)
                 request.meta['proxy'] = ip
                 request.meta['download_timeout'] = 10
+        request.meta['req_time'] = time.time()
 
     def process_response(self, response, request, spider):
-        print('proxy response process...')
+        request.meta['res_time'] = time.time()
         return response
 
     def process_exception(self, request, exception, spider):
-        print('proxy exception process...')
-        raise None
+        pass
 
     def refresh_pool(self):
         db_conn = pymysql.connect(host='localhost', user='root', \
